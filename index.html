@@ -1,0 +1,246 @@
+<!doctype html>
+<html lang="hi"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Saaf – Photo ka blur theek karo</title>
+<style>
+:root{--bg:#f3f5f4;--ink:#13222b;--mut:#5b6b73;--ac:#0b7a75;--on:#fff;--card:#fff;--ln:#d5dcdc;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1a1f;--ink:#e8eeee;--mut:#93a4aa;--ac:#3cc4bb;--on:#06201e;--card:#16252c;--ln:#2a3d46;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1a1f;--ink:#e8eeee;--mut:#93a4aa;--ac:#3cc4bb;--on:#06201e;--card:#16252c;--ln:#2a3d46;color-scheme:dark}
+*{box-sizing:border-box}html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font:16px/1.5 "Trebuchet MS",system-ui,sans-serif;min-height:100vh}
+main{max-width:560px;margin:0 auto;padding:28px 18px 48px}
+h1{font:700 2.1rem/1.1 Georgia,"Times New Roman",serif;margin:0 0 6px}
+p.sub{margin:0 0 22px;color:var(--mut)}
+.drop{position:relative;display:block;border:2px dashed var(--ln);border-radius:14px;background:var(--card);padding:26px 16px;text-align:center;cursor:pointer}
+.drop:focus-within{outline:3px solid var(--ac);outline-offset:2px}
+.drop b{display:block}.drop span{color:var(--mut);font-size:.9rem}
+.file-input{display:none!important}.pick{max-width:260px;margin:14px auto 0;display:block}.drop{cursor:default}
+.drop img{max-width:100%;max-height:260px;border-radius:8px;display:block;margin:0 auto 10px}
+button{font:inherit;font-weight:700;width:100%;margin-top:14px;padding:14px;border:0;border-radius:12px;background:var(--ac);color:var(--on);cursor:pointer}
+button.alt{background:var(--card);color:var(--ink);border:1px solid var(--ln)}
+button:disabled{opacity:.4;cursor:not-allowed}
+button:focus-visible{outline:3px solid var(--ink);outline-offset:2px}
+.opts{display:none;margin-top:16px;background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:14px}
+.opts label{display:flex;justify-content:space-between;align-items:center;gap:10px;margin:8px 0;color:var(--ink)}
+.opts select{font:inherit;padding:6px;border-radius:8px;border:1px solid var(--ln);background:var(--bg);color:var(--ink)}
+.opts input[type=range]{width:55%;accent-color:var(--ac)}
+.opts input[type=checkbox]{width:20px;height:20px;accent-color:var(--ac)}
+#res{display:none;margin-top:22px}
+.cmp{position:relative;border-radius:12px;overflow:hidden;background:var(--card);line-height:0;user-select:none}
+.cmp img{width:100%;height:auto;display:block}
+.cmp img.b{position:absolute;inset:0;pointer-events:none;clip-path:inset(0 50% 0 0)}
+.tag{position:absolute;top:8px;font-size:.75rem;line-height:1;padding:5px 8px;border-radius:6px;background:rgba(0,0,0,.6);color:#fff;pointer-events:none}
+.cmp input{position:absolute;left:0;right:0;bottom:8px;width:100%;margin:0;accent-color:var(--ac)}
+.hint{color:var(--mut);font-size:.88rem;margin-top:10px}
+#sc{margin-top:12px;font-weight:700}
+#st{min-height:1.4em;color:var(--mut);margin-top:10px;font-size:.92rem}
+</style></head>
+<body><main>
+<h1>Saaf</h1>
+<p class="sub">Photo ko crisp, bright aur premium flagship-camera look dene ki koshish. Gallery se photo chuno.</p>
+
+<div class="drop" id="galleryBox">
+  <div id="ph"><b>Gallery se photo chuno</b>
+  <span>Gallery kholne ke liye neeche button dabao</span></div>
+  <button type="button" class="pick" id="pickGallery">📁 Gallery kholo</button>
+  <input class="file-input" type="file" id="f" accept="image/*">
+</div>
+<div class="drop" style="margin-top:10px;padding:14px">
+  <b>Ya camera se nayi photo kheencho</b>
+  <button type="button" class="pick" id="pickCamera">📷 Camera kholo</button>
+  <input class="file-input" type="file" id="cameraFile" accept="image/*" capture="environment">
+</div>
+
+<div class="opts" id="row">
+  <label>Blur kitna hai
+    <select id="mode"><option value="auto">Auto pata karo</option><option value="1">Halka</option><option value="2">Medium</option><option value="3">Zyada</option></select></label>
+  <label for="amt">Kitna tez <input type="range" id="amt" min="0.5" max="1.5" step="0.1" value="1"></label>
+  <label for="dn">Noise kam karo <input type="checkbox" id="dn"></label>
+  <label for="lv">Rang aur contrast nikharo <input type="checkbox" id="lv" checked></label>
+  <label for="beauty">Soft skin effect <input type="range" id="beauty" min="0" max="35" step="5" value="10"></label>
+  <label for="sharp">Extra detail / sharpness <input type="range" id="sharp" min="0" max="2" step="0.1" value="0.8"></label>
+  <label for="look">Camera finish <select id="look"><option value="natural">Natural HD</option><option value="flagship" selected>200MP-style flagship look</option></select></label>
+</div>
+
+<button id="go" disabled>Submit – blur theek karo</button>
+<div id="st" role="status" aria-live="polite"></div>
+
+<section id="res">
+  <div class="cmp">
+    <img id="after" alt="Theek ki hui photo">
+    <img id="before" class="b" alt="Original photo">
+    <span class="tag" style="left:8px">Pehle</span><span class="tag" style="right:8px">Baad mein</span>
+    <input type="range" id="sl" min="0" max="100" value="50" aria-label="Pehle aur baad ki tulna">
+  </div>
+  <div id="sc"></div>
+  <button id="download" type="button">⬇️ Download Enhanced Photo</button>
+  <button id="sv" class="alt">Share Photo</button>
+  <p class="hint">“200MP-style” ek visual finish hai, asli 200MP capture nahi. Browser mein AI face reconstruction nahi hota; face ki pehchaan aur natural features ko badalne ke bajay subtle smoothing rakhi gayi hai.</p>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s);
+let src=null,timer=null,outCv=null;
+
+$('#pickGallery').addEventListener('click',()=>$('#f').click());
+$('#pickCamera').addEventListener('click',()=>$('#cameraFile').click());
+
+document.querySelectorAll('input[type=file]').forEach(el=>el.addEventListener('change',e=>{
+  const file=e.target.files[0]; if(!file) return;
+  if(!/^image\//.test(file.type)&&!/\.(jpe?g|png|webp|heic|heif)$/i.test(file.name)){
+    e.target.value='';$('#st').textContent='Sirf photo chalegi. Koi aur file nahi.';return;
+  }
+  e.target.value='';
+  const im=new Image();
+  im.onload=()=>{
+    const M=2400,k=Math.min(1,M/Math.max(im.width,im.height));
+    src=document.createElement('canvas');
+    src.width=Math.round(im.width*k);src.height=Math.round(im.height*k);
+    src.getContext('2d').drawImage(im,0,0,src.width,src.height);
+    $('#ph').innerHTML='<img alt="Chuni hui photo" src="'+im.src+'"><span>Doosri photo ke liye tap karo</span>';
+    $('#go').disabled=false;$('#row').style.display='block';
+    $('#res').style.display='none';$('#st').textContent='';
+  };
+  im.onerror=()=>{$('#go').disabled=true;$('#st').textContent='Ye photo khul nahi payi (HEIC jaise format kuch browser mein nahi chalte). Koi JPG ya PNG photo chuno.'};
+  const fr=new FileReader();
+  fr.onload=()=>{im.src=fr.result};
+  fr.onerror=()=>{$('#st').textContent='Photo padh nahi payi. Dobara chuno.'};
+  fr.readAsDataURL(file);
+}));
+
+const put=fs=>{try{if(fs&&fs[0]){$('#f').files=fs;$('#f').dispatchEvent(new Event('change'))}}catch(_){}};
+addEventListener('paste',e=>put(e.clipboardData&&e.clipboardData.files));
+addEventListener('dragover',e=>e.preventDefault());
+addEventListener('drop',e=>{e.preventDefault();put(e.dataTransfer&&e.dataTransfer.files)});
+
+function box(s,d,w,h,r,horiz){
+  const len=horiz?w:h,lines=horiz?h:w,st=horiz?1:w,ls=horiz?w:1,n=2*r+1;
+  for(let l=0;l<lines;l++){
+    const b=l*ls;let sum=0;
+    for(let i=-r;i<=r;i++) sum+=s[b+Math.min(len-1,Math.max(0,i))*st];
+    for(let i=0;i<len;i++){
+      d[b+i*st]=sum/n;
+      sum+=s[b+Math.min(len-1,i+r+1)*st]-s[b+Math.max(0,i-r)*st];
+    }
+  }
+}
+function blur(a,w,h,r){
+  const o=Float32Array.from(a),t=new Float32Array(a.length);
+  for(let p=0;p<3;p++){box(o,t,w,h,r,true);box(t,o,w,h,r,false);}
+  return o;
+}
+// sharpness score 0-100 (Laplacian variance)
+function score(Y,w,h){
+  let s=0,s2=0,c=0;
+  for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){
+    const i=y*w+x,l=4*Y[i]-Y[i-1]-Y[i+1]-Y[i-w]-Y[i+w];
+    s+=l;s2+=l*l;c++;
+  }
+  const v=s2/c-(s/c)*(s/c);
+  return Math.min(100,Math.round(Math.sqrt(v)*4));
+}
+// Richardson-Lucy deconvolution (Gaussian blur assumed)
+function rl(obs,w,h,r,it){
+  const est=Float32Array.from(obs),n=obs.length;
+  for(let k=0;k<it;k++){
+    const b=blur(est,w,h,r);
+    for(let i=0;i<n;i++) b[i]=obs[i]/(b[i]+1e-3);
+    const c=blur(b,w,h,r);
+    for(let i=0;i<n;i++){const v=est[i]*c[i];est[i]=v>300?300:v<0?0:v;}
+  }
+  return est;
+}
+
+function enhance(){
+  const w=src.width,h=src.height,px=src.getContext('2d').getImageData(0,0,w,h).data,n=w*h;
+  const Y=new Float32Array(n);
+  for(let i=0;i<n;i++) Y[i]=.299*px[i*4]+.587*px[i*4+1]+.114*px[i*4+2];
+  const s0=score(Y,w,h);
+  let lvl=$('#mode').value; if(lvl==='auto') lvl=s0<25?3:s0<50?2:1;
+  const sigma=[0,1.0,1.7,2.6][lvl]*Math.max(w,h)/1200;
+  const r=Math.max(1,Math.round((Math.sqrt(4*sigma*sigma+1)-1)/2));
+  const it=[0,6,8,10][lvl], gain=parseFloat($('#amt').value);
+  let obs=new Float32Array(n);
+  if($('#dn').checked){const bl=blur(Y,w,h,1);for(let i=0;i<n;i++) obs[i]=.6*Y[i]+.4*bl[i]+1;}
+  else for(let i=0;i<n;i++) obs[i]=Y[i]+1;
+  const est=rl(obs,w,h,r,it);
+  const D=new Float32Array(n),Y2=new Float32Array(n);
+  for(let i=0;i<n;i++){
+    let d=gain*(est[i]-(Y[i]+1));const a=Math.abs(d);
+    if(a<1.5) d*=a/1.5;
+    D[i]=d>80?80:d<-80?-80:d; Y2[i]=Y[i]+D[i];
+  }
+  let lo=0,sc=1;
+  if($('#lv').checked){
+    const hist=new Uint32Array(256);
+    for(let i=0;i<n;i++){const v=Y2[i];hist[v<0?0:v>255?255:v|0]++;}
+    let acc=0,a=0,b=255;
+    for(let v=0;v<256;v++){acc+=hist[v];if(acc>=n*.01){a=v;break;}}
+    acc=0;for(let v=255;v>=0;v--){acc+=hist[v];if(acc>=n*.01){b=v;break;}}
+    lo=a;sc=Math.max(1,Math.min(1.6,255/Math.max(40,b-a)));
+  }
+  const out=new ImageData(w,h),o=out.data;
+  for(let i=0;i<n;i++){
+    for(let c=0;c<3;c++){
+      let v=(px[i*4+c]+D[i]-lo)*sc;o[i*4+c]=v<0?0:v>255?255:v;
+    }
+    o[i*4+3]=255;
+  }
+  outCv=document.createElement('canvas');outCv.width=w;outCv.height=h;
+  outCv.getContext('2d').putImageData(out,0,0);
+  // Subtle skin softening: blend a lightly blurred copy only in low-detail areas.
+  const beauty=Number($('#beauty').value)/100;
+  if(beauty>0){
+    const sm=document.createElement('canvas');sm.width=w;sm.height=h;
+    const sx=sm.getContext('2d');sx.filter='blur(1.2px)';sx.drawImage(outCv,0,0);sx.filter='none';
+    const base=outCv.getContext('2d'),a=base.getImageData(0,0,w,h),b=sx.getImageData(0,0,w,h),ad=a.data,bd=b.data;
+    for(let y=1;y<h-1;y++)for(let x=1;x<w-1;x++){const i=(y*w+x)*4,lum=(ad[i]*.299+ad[i+1]*.587+ad[i+2]*.114),gx=Math.abs(ad[i+4]-ad[i-4])+Math.abs(ad[i+5]-ad[i-3])+Math.abs(ad[i+6]-ad[i-2]),gy=Math.abs(ad[i+w*4]-ad[i-w*4]);const edge=Math.min(1,(gx+gy)/90);const mix=beauty*(1-edge);for(let c=0;c<3;c++)ad[i+c]=ad[i+c]*(1-mix)+bd[i+c]*mix;}
+    base.putImageData(a,0,0);
+  }
+  // Final crispness pass with edge-safe unsharp mask.
+  const sharp=Number($('#sharp').value);
+  if(sharp>0){const sm=document.createElement('canvas');sm.width=w;sm.height=h;const sx=sm.getContext('2d');sx.filter='blur(1px)';sx.drawImage(outCv,0,0);sx.filter='none';const base=outCv.getContext('2d'),a=base.getImageData(0,0,w,h),b=sx.getImageData(0,0,w,h),ad=a.data,bd=b.data;for(let i=0;i<ad.length;i+=4)for(let c=0;c<3;c++){const d=ad[i+c]-bd[i+c];ad[i+c]=Math.max(0,Math.min(255,ad[i+c]+d*sharp));}base.putImageData(a,0,0);}
+  // Premium camera-style finishing: restrained contrast/saturation, then high-quality 2x upscale.
+  const finish=document.createElement('canvas'); finish.width=w; finish.height=h;
+  const fx=finish.getContext('2d');
+  fx.filter=$('#look').value==='flagship'?'contrast(1.045) saturate(1.08) brightness(1.015)':'none';
+  fx.drawImage(outCv,0,0); fx.filter='none';
+  const YoData=fx.getImageData(0,0,w,h).data,Yo=new Float32Array(n);
+  for(let i=0;i<n;i++) Yo[i]=.299*YoData[i*4]+.587*YoData[i*4+1]+.114*YoData[i*4+2];
+  const maxPixels=10000000,scale=Math.min(2,Math.sqrt(maxPixels/(w*h)));
+  const finalCv=document.createElement('canvas');
+  finalCv.width=Math.max(1,Math.round(w*scale));finalCv.height=Math.max(1,Math.round(h*scale));
+  const finalCtx=finalCv.getContext('2d');finalCtx.imageSmoothingEnabled=true;finalCtx.imageSmoothingQuality='high';finalCtx.drawImage(finish,0,0,finalCv.width,finalCv.height);
+  outCv=finalCv;
+  $('#after').src=outCv.toDataURL('image/jpeg',.98);
+  $('#before').src=src.toDataURL('image/jpeg',.95);
+  $('#sc').textContent='Sharpness: '+s0+' → '+score(Yo,w,h)+' | Output: '+finalCv.width+' × '+finalCv.height+' px';
+}
+
+function run(){
+  $('#st').textContent='Blur theek ho raha hai… thoda ruko';$('#go').disabled=true;
+  setTimeout(()=>{
+    try{enhance();$('#res').style.display='block';$('#st').textContent='Ho gaya. Slider se pehle-baad dekho.';}
+    catch(e){$('#st').textContent='Kuch gadbad hui. Chhoti photo ke saath dobara try karo.';}
+    $('#go').disabled=false;
+  },40);
+}
+$('#go').addEventListener('click',run);
+['amt','mode','dn','lv','beauty','sharp','look'].forEach(id=>$('#'+id).addEventListener('change',()=>{
+  if($('#res').style.display==='block'){clearTimeout(timer);timer=setTimeout(run,300);}
+}));
+$('#sl').addEventListener('input',e=>{$('#before').style.clipPath='inset(0 '+(100-e.target.value)+'% 0 0)';});
+$('#download').addEventListener('click',()=>{
+  if(!outCv)return;
+  outCv.toBlob(blob=>{if(!blob){$('#st').textContent='Download nahi ho paya. Dobara try karo.';return;}const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='Saaf_Enhanced_Photo.jpg';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1500);$('#st').textContent='Download shuru ho gaya. Gallery ke Downloads folder mein dekho.';},'image/jpeg',.98);
+});
+$('#sv').addEventListener('click',async()=>{
+  try{
+    const b=await new Promise(r=>outCv.toBlob(r,'image/jpeg',.98));
+    const f=new File([b],'saaf.jpg',{type:'image/jpeg'});
+    if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f]});return;}
+  }catch(e){}
+  $('#st').textContent='Share nahi hua. Download Enhanced Photo button dabao.';
+});
+</script>
+</body></html>
